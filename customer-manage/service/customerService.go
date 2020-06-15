@@ -2,29 +2,53 @@ package service
 
 import (
 	"fmt"
+	"go-exercise/customer-manage/dao"
 	"go-exercise/customer-manage/model"
 )
 
+// CustomerService server 层结构体
 type CustomerService struct {
 	ID           int
 	CustomerList []model.Customer
+	CustomerDao  *dao.CustomerController
 }
 
-func (c *CustomerService) GetCustomer() string {
+// Add 新增
+func (service *CustomerService) Add() error {
+	customer := &model.Customer{}
+	fmt.Println("请输入Name:")
+	fmt.Scanln(&customer.Name)
+	fmt.Println("请输入Gender:")
+	fmt.Scanln(&customer.Gender)
+	fmt.Println("请输入Email:")
+	fmt.Scanln(&customer.Email)
+	return nil
+}
+
+// List 获取列表
+func (service *CustomerService) List() string {
 	var str string
-	for _, v := range c.CustomerList {
+	conn := service.CustomerDao.Pool.Get()
+	defer conn.Close()
+	conn.Do("HGet", "customers")
+	for _, v := range service.CustomerList {
 		str += model.CustomerFormat(&v)
 	}
 	return str
 }
 
-func (c *CustomerService) Update(id int, name, gender, email string) bool {
-	index, customer := c.GetCustomerById(id)
+// Update 更新数据
+func (service *CustomerService) Update() bool {
+	var id int
+	var (
+		name, gender, email string
+	)
+	index, customer := service.GetCustomerByID(id)
 	if customer != nil && customer.Id > 0 {
 		customer.Name = name
 		customer.Gender = gender
 		customer.Email = email
-		c.CustomerList[index] = *customer
+		service.CustomerList[index] = *customer
 		return true
 	} else {
 		fmt.Println("没有查找到Customer")
@@ -32,10 +56,12 @@ func (c *CustomerService) Update(id int, name, gender, email string) bool {
 	}
 }
 
-func (c *CustomerService) Delete(id int) bool {
-	index, customer := c.GetCustomerById(id)
+// Delete 删除
+func (service *CustomerService) Delete() bool {
+	var id int
+	index, customer := service.GetCustomerByID(id)
 	if customer != nil && customer.Id > 0 {
-		c.CustomerList = append(c.CustomerList[:index], c.CustomerList[index+1:]...)
+		service.CustomerList = append(service.CustomerList[:index], service.CustomerList[index+1:]...)
 		return true
 	} else {
 		fmt.Println("没有查找到Customer")
@@ -43,8 +69,9 @@ func (c *CustomerService) Delete(id int) bool {
 	}
 }
 
-func (c *CustomerService) GetCustomerById(id int) (index int, customer *model.Customer) {
-	for k, v := range c.CustomerList {
+// GetCustomerByID 获取一个customer
+func (service *CustomerService) GetCustomerByID(id int) (index int, customer *model.Customer) {
+	for k, v := range service.CustomerList {
 		if v.Id == id {
 			index = k
 			customer = &v
@@ -52,15 +79,4 @@ func (c *CustomerService) GetCustomerById(id int) (index int, customer *model.Cu
 		}
 	}
 	return
-}
-
-func (c *CustomerService) AddCustomer(customer *model.Customer) {
-	c.ID++
-	customer.Id = c.ID
-	c.CustomerList = append(c.CustomerList, *customer)
-	fmt.Println("List:", c.CustomerList)
-}
-
-func (this *CustomerService) GetCustomersList() (customers []model.Customer) {
-	return this.CustomerList
 }
