@@ -19,6 +19,7 @@ type application struct {
 	service *service.CustomerService
 }
 
+// 菜单展示
 func (app *application) showMenu() {
 	for app.loop {
 		fmt.Println("-----------------客户信息管理软件-----------------")

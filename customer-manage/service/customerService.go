@@ -14,7 +14,7 @@ type CustomerService struct {
 }
 
 // Add 新增
-func (service *CustomerService) Add() error {
+func (service *CustomerService) Add() {
 	customer := &model.Customer{}
 	fmt.Println("请输入Name:")
 	fmt.Scanln(&customer.Name)
@@ -22,61 +22,78 @@ func (service *CustomerService) Add() error {
 	fmt.Scanln(&customer.Gender)
 	fmt.Println("请输入Email:")
 	fmt.Scanln(&customer.Email)
-	return nil
+
+	err := service.CustomerDao.AddCustomer(customer)
+	if err != nil {
+		fmt.Println("Add Failed:", err)
+	}
+	fmt.Println("Add Success")
 }
 
 // List 获取列表
 func (service *CustomerService) List() string {
 	var str string
-	conn := service.CustomerDao.Pool.Get()
-	defer conn.Close()
-	conn.Do("HGet", "customers")
-	for _, v := range service.CustomerList {
-		str += model.CustomerFormat(&v)
-	}
+	service.CustomerDao.GetCustomerList()
+	// for _, v := range service.CustomerList {
+	// 	str += model.CustomerFormat(&v)
+	// }
 	return str
 }
 
 // Update 更新数据
-func (service *CustomerService) Update() bool {
+func (service *CustomerService) Update() {
 	var id int
 	var (
 		name, gender, email string
 	)
-	index, customer := service.GetCustomerByID(id)
+	fmt.Println("Id:")
+	fmt.Scanf("%d\n", &id)
+	fmt.Println("Name:")
+	fmt.Scanln(&name)
+	fmt.Println("Gender:")
+	fmt.Scanln(&gender)
+	fmt.Println("Email:")
+	fmt.Scanln(&email)
+	// 先查找是否存在
+	customer, err := service.GetCustomerByID(id)
+	if err != nil {
+		fmt.Println("not find customer", err)
+		return
+	}
 	if customer != nil && customer.Id > 0 {
 		customer.Name = name
 		customer.Gender = gender
 		customer.Email = email
-		service.CustomerList[index] = *customer
-		return true
+		err := service.CustomerDao.UpdateCustomer(customer)
+		if err != nil {
+			fmt.Println("update fail:", err)
+			return
+		}
+		fmt.Println("update success!")
 	} else {
-		fmt.Println("没有查找到Customer")
-		return false
+		fmt.Println("not find customer")
+		return
 	}
 }
 
 // Delete 删除
-func (service *CustomerService) Delete() bool {
+func (service *CustomerService) Delete() {
 	var id int
-	index, customer := service.GetCustomerByID(id)
-	if customer != nil && customer.Id > 0 {
-		service.CustomerList = append(service.CustomerList[:index], service.CustomerList[index+1:]...)
-		return true
-	} else {
-		fmt.Println("没有查找到Customer")
-		return false
+	fmt.Println("请输入Id:")
+	fmt.Scanf("%d\n", &id)
+	err := service.CustomerDao.DeleteCustomerById(id)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+	fmt.Println("Delete Success!")
 }
 
 // GetCustomerByID 获取一个customer
-func (service *CustomerService) GetCustomerByID(id int) (index int, customer *model.Customer) {
-	for k, v := range service.CustomerList {
-		if v.Id == id {
-			index = k
-			customer = &v
-			break
-		}
+func (service *CustomerService) GetCustomerByID(id int) (customer *model.Customer, err error) {
+	customer, err = service.CustomerDao.GetCustomerByID(id)
+	if err != nil {
+		return
 	}
 	return
 }
