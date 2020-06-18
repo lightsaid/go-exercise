@@ -31,13 +31,17 @@ func (service *CustomerService) Add() {
 }
 
 // List 获取列表
-func (service *CustomerService) List() string {
+func (service *CustomerService) List() {
 	var str string
-	service.CustomerDao.GetCustomerList()
-	// for _, v := range service.CustomerList {
-	// 	str += model.CustomerFormat(&v)
-	// }
-	return str
+	customers, err := service.CustomerDao.GetCustomerList()
+	if err != nil {
+		fmt.Println("GetCustomerList fail:", err)
+		return
+	}
+	for _, v := range customers {
+		str += model.CustomerFormat(&v)
+	}
+	fmt.Println(str)
 }
 
 // Update 更新数据

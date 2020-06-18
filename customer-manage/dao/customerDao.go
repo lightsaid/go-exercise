@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go-exercise/customer-manage/helper"
 	"go-exercise/customer-manage/model"
+	"strconv"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -85,7 +87,7 @@ func (this *CustomerController) UpdateCustomer(customer *model.Customer) (err er
 	return err
 }
 
-func (this *CustomerController) GetCustomerList() {
+func (this *CustomerController) GetCustomerList() (customers []model.Customer, err error) {
 	conn := this.Pool.Get()
 	defer conn.Close()
 	res, err := redis.StringMap(conn.Do("HGetAll", "customers"))
@@ -93,11 +95,24 @@ func (this *CustomerController) GetCustomerList() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("list:", res)
-
 	for k, v := range res {
-		fmt.Printf("[%v]=%v\n", k, v)
+		n, err := strconv.Atoi(k)
+		if err != nil {
+			continue
+		}
+		fmt.Println("key:", helper.TypeInference(n))
+		if helper.TypeInference(k) == "int" {
+			customer := model.Customer{}
+			err = json.Unmarshal([]byte(v), &customer)
+			fmt.Println("customer=", customer)
+			if err != nil {
+				return nil, err
+			}
+			customers = append(customers, customer)
+		}
 	}
+	fmt.Printf("customers=%v", customers)
+	return
 }
 
 // func (this *CustomerController) GetNextId() int {
