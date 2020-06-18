@@ -4,20 +4,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go-exercise/customer-manage/helper"
+
 	"go-exercise/customer-manage/model"
-	"strconv"
 
 	"github.com/gomodule/redigo/redis"
 )
 
+// CustomerController 控制器结构体
 type CustomerController struct {
 	Pool *redis.Pool
 }
 
-func (this *CustomerController) AddCustomer(customer *model.Customer) (err error) {
+// AddCustomer 添加一个customer
+func (controller *CustomerController) AddCustomer(customer *model.Customer) (err error) {
 	// 取出一根连接池
-	conn := this.Pool.Get()
+	conn := controller.Pool.Get()
 	defer conn.Close()
 	// 设置customerId 自增 1
 	id, err := redis.Int(conn.Do("HINCRBY", "customers", "customerId", 1))
@@ -27,7 +28,7 @@ func (this *CustomerController) AddCustomer(customer *model.Customer) (err error
 	}
 	fmt.Println("id:", id)
 
-	customer.Id = id
+	customer.ID = id
 	str, err := json.Marshal(customer)
 
 	_, err = conn.Do("HSet", "customers", id, str)
@@ -36,15 +37,16 @@ func (this *CustomerController) AddCustomer(customer *model.Customer) (err error
 		return
 	}
 	return nil
-	// conn.Do("HSet", "customers", customer.Id, string(customer))
+	// conn.Do("HSet", "customers", customer.ID, string(customer))
 	// 通过命令设置redis Hash customers 基础数据
 	// hset customers 1 "{\"id\":1,\"name\":\"Ly\",\"gender\":\"male\",\"email\":\"Ly@qq.com\"}"
 	// hset customers customerId 1 // 设置customerId 为 0
 	// HINCRBY customers customerId 1 // 设置customerId 自增 1
 }
 
-func (this *CustomerController) GetCustomerByID(id int) (customer *model.Customer, err error) {
-	conn := this.Pool.Get()
+// GetCustomerByID 获取customer
+func (controller *CustomerController) GetCustomerByID(id int) (customer *model.Customer, err error) {
+	conn := controller.Pool.Get()
 	defer conn.Close()
 	result, err := redis.String(conn.Do("HGet", "customers", id))
 	if err != nil {
@@ -57,28 +59,29 @@ func (this *CustomerController) GetCustomerByID(id int) (customer *model.Custome
 	return
 }
 
-func (this *CustomerController) DeleteCustomerById(id int) error {
-	customer, err := this.GetCustomerByID(id)
+// DeleteCustomerByID 删除
+func (controller *CustomerController) DeleteCustomerByID(id int) error {
+	customer, err := controller.GetCustomerByID(id)
 	if err != nil {
 		return err
 	}
-	if customer != nil && customer.Id > 0 {
-		conn := this.Pool.Get()
+	if customer != nil && customer.ID > 0 {
+		conn := controller.Pool.Get()
 		defer conn.Close()
 		_, err = conn.Do("HDel", "customers", id)
 		if err != nil {
 			return err
 		}
 		return nil
-	} else {
-		return errors.New("Delete Fail Not Find Customer.")
 	}
+	return errors.New("Delete fail, not find customer")
 }
 
-func (this *CustomerController) UpdateCustomer(customer *model.Customer) (err error) {
-	conn := this.Pool.Get()
+// UpdateCustomer 更新
+func (controller *CustomerController) UpdateCustomer(customer *model.Customer) (err error) {
+	conn := controller.Pool.Get()
 	defer conn.Close()
-	cid := customer.Id
+	cid := customer.ID
 	str, err := json.Marshal(customer)
 	if err != nil {
 		return err
@@ -87,8 +90,9 @@ func (this *CustomerController) UpdateCustomer(customer *model.Customer) (err er
 	return err
 }
 
-func (this *CustomerController) GetCustomerList() (customers []model.Customer, err error) {
-	conn := this.Pool.Get()
+// GetCustomerList 获取列表
+func (controller *CustomerController) GetCustomerList() (customers []model.Customer, err error) {
+	conn := controller.Pool.Get()
 	defer conn.Close()
 	res, err := redis.StringMap(conn.Do("HGetAll", "customers"))
 	if err != nil {
@@ -96,27 +100,14 @@ func (this *CustomerController) GetCustomerList() (customers []model.Customer, e
 		return
 	}
 	for k, v := range res {
-		n, err := strconv.Atoi(k)
-		if err != nil {
-			continue
-		}
-		fmt.Println("key:", helper.TypeInference(n))
-		if helper.TypeInference(k) == "int" {
-			customer := model.Customer{}
+		customer := model.Customer{}
+		if k != "customerId" {
 			err = json.Unmarshal([]byte(v), &customer)
-			fmt.Println("customer=", customer)
 			if err != nil {
-				return nil, err
+				continue
 			}
 			customers = append(customers, customer)
 		}
 	}
-	fmt.Printf("customers=%v", customers)
 	return
 }
-
-// func (this *CustomerController) GetNextId() int {
-// 	conn := this.pool.Get()
-// 	defer conn.Close()
-// 	return 0
-// }

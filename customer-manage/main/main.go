@@ -5,12 +5,13 @@ import (
 	"go-exercise/customer-manage/dao"
 	"go-exercise/customer-manage/model"
 	"go-exercise/customer-manage/service"
-	"os"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
 )
 
+// TODO: 1. 客户列表缓存，分页，添加 customer 数据格式校验
+// TODO: 2. 返回json api 接口
 // application 应用程序结构体
 type application struct {
 	pool    *redis.Pool
@@ -40,8 +41,7 @@ func (app *application) showMenu() {
 		case 4:
 			app.service.List()
 		case 5:
-			fmt.Println("退出")
-			os.Exit(0)
+			app.service.Exit()
 		default:
 			fmt.Print("输入有误，重新输入：")
 		}
@@ -62,12 +62,6 @@ func initApp() application {
 		service: service,
 	}
 	return app
-	// CustomerList []model.Customer
-	// CustomerDao  *dao.CustomerController
-
-	// dao := &dao.CustomerController{
-	// 	Pool: app.pool,
-	// }
 }
 
 func main() {

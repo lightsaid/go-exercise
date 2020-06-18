@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go-exercise/customer-manage/dao"
 	"go-exercise/customer-manage/model"
+	"os"
+	"strings"
 )
 
 // CustomerService server 层结构体
@@ -64,7 +66,7 @@ func (service *CustomerService) Update() {
 		fmt.Println("not find customer", err)
 		return
 	}
-	if customer != nil && customer.Id > 0 {
+	if customer != nil && customer.ID > 0 {
 		customer.Name = name
 		customer.Gender = gender
 		customer.Email = email
@@ -85,7 +87,7 @@ func (service *CustomerService) Delete() {
 	var id int
 	fmt.Println("请输入Id:")
 	fmt.Scanf("%d\n", &id)
-	err := service.CustomerDao.DeleteCustomerById(id)
+	err := service.CustomerDao.DeleteCustomerByID(id)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -100,4 +102,15 @@ func (service *CustomerService) GetCustomerByID(id int) (customer *model.Custome
 		return
 	}
 	return
+}
+
+// Exit 确认退出
+func (service *CustomerService) Exit() {
+	var key string
+	fmt.Println("确定要退出？（y/n）")
+	fmt.Scanf("%s\n", &key)
+	if strings.ToUpper(key) == "Y" {
+		fmt.Println("正在退出系统。。。")
+		os.Exit(0)
+	}
 }
